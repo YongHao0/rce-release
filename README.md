@@ -1,7 +1,7 @@
 ## 简介
 `release.js`用来合并RCE pc端和web端的代码。 
 
-&emsp;该工具将合并后的代码输出到特定目录，不影响项目源码。
+该工具将合并后的代码输出到特定目录，不影响项目源码。
 
 ## 规则
 
@@ -37,7 +37,7 @@ node release.js <path> [output] [-c]
 |-c|是否压缩|No|
 
 ## 示例
-1. **`推荐`**将release.js与RCE源码放在同一个目录。执行如下终端命令：
+1. `推荐`将release.js与RCE源码放在同一个目录。执行如下终端命令：
 
     ```
     node release.js ./desktop-client -c
