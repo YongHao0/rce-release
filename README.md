@@ -8,20 +8,20 @@
 1. 使用前必须已正确安装全局node以及npm。
 2. 需要合并的js，css必须以script或link标签的形式定义在inc/head-static.html中。
 3. 合并的规则由用户在head-static.html中的引入决定，在head-static.html中相同_group命名的文件将合并在一起。
-4. 相同\_group的js或css，引入必须相邻，中间不能插入不同名字\_group的引入。
+4. 相同\_group的js或css，引入必须相邻，中间不能插入不同\_group命名的引入。
 5. js定义必须遵循js模块化规范。
 6. js文件中'use strict'; 不能全部放到全局，可以在js文件的最外层函数开始处加'use strict’;
 
  #### head-static.html示例：
  ```
- <script src="modules/upload/qiniu.js" _group="upload"></script>
- <script src="modules/upload/upload.js" _group="upload"></script>
- <script src="modules/upload/init.js" _group="upload"></script>
+ <script src="modules/upload/up1.js" _group="upload"></script>
+ <script src="modules/upload/up2.js" _group="upload"></script>
+ <script src="modules/upload/up3.js" _group="upload"></script>
 
- <script src="lib/moment-2.17.1.js" _group="cmpt"></script>
- <script src="js/utils.js" _group="cmpt"></script>
- <script src="js/common.js" _group="cmpt"></script>
+ <script src="lib/cm1.js" _group="cmpt"></script>
+ <script src="js/cm2.js" _group="cmpt"></script>
  ```
+ 结果：up1.js，up2.js，up3.js合并成upload.js。cm1.js，cm2.js合并成cmpt.js。
  
 ## 格式
 ```
