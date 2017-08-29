@@ -1,59 +1,28 @@
-## 简介
-`release.js`用来合并RCE pc端和web端的代码。 
-
-该工具将合并后的代码输出到特定目录，不影响项目源码。
-
-## 规则
-
-1. 使用前必须已正确安装全局node以及npm。
-2. 需要合并的js，css必须以script或link标签的形式定义在inc/head-static.html中。
-3. 合并的规则由用户在head-static.html中的引入决定，在head-static.html中相同_group命名的文件将合并在一起。
-4. 相同\_group的js或css，引入必须相邻，中间不能插入不同\_group命名的引入。
-5. js定义必须遵循js模块化规范。
-6. js文件中'use strict'; 不能全部放到全局，可以在js文件的最外层函数开始处加'use strict’;
-
- #### head-static.html示例：
- ```
- <script src="modules/upload/up1.js" _group="upload"></script>
- <script src="modules/upload/up2.js" _group="upload"></script>
- <script src="modules/upload/up3.js" _group="upload"></script>
-
- <script src="lib/cm1.js" _group="cmpt"></script>
- <script src="js/cm2.js" _group="cmpt"></script>
- ```
- 结果：up1.js，up2.js，up3.js合并成upload.js。cm1.js，cm2.js合并成cmpt.js。
- 
-## 格式
-```
-node release.js <path> [output] [-c]
-```
-
-## 参数：
-
-|参数名|描述|是否必填|
-|------|------|----|
-|path|源码目录|Yes|
-|output|合并后代码的输出目录|No|
-|-c|是否压缩|No|
-
-## 示例
-1. `推荐`将release.js与RCE源码放在同一个目录。执行如下终端命令：
-
-    ```
-    node release.js ./desktop-client -c
-    ```
-    结果：将会把./desktop-client目录中的源码合并压缩，输出到当前目录的release文件夹中。
-
-2. 	只合并不压缩。设置源码路径./desktop-client，设置输出路径../desktop-release：
+## 使用说明
+1. 使用前需要正确安装全局node以及npm。
+2. 在任意位置执行终端命令：
 
 	```
-	node release.js ./desktop-client ../desktop-release
+	node release.js <path> [output] [-c]
+	/*
+	   path为源码路径，必填。
+	   output为合并后的输出路径，可选。不填则默认在当前目录生成release文件夹。
+	   -c 表示是否压缩，可选。 
+	*/ 
 	```
-	结果：将./desktop-client目录中的源码合并，但不压缩，输出到../desktop-release文件夹中。
+3. `推荐`将release.js与RCE源码放在同一个目录。直接执行如下终端命令：
 
-3. 压缩且合并。设置源码路径./desktop-client，设置输出路径../desktop-release：
+	```
+	node release.js ./desktop-client -c
+	```
 
-	```
-	node release.js ./desktop-client ../desktop-release -c
-	```
-	结果：将./desktop-client目录中的源码合并压缩，输出到../desktop-release文件夹中。
+
+## 规则说明
+
+1. 需要合并的js，css必须以script或link标签的形式定义在inc目录下的html文件中。
+2. 合并的规则由用户引入js，css的顺序和命名来决定，相同_group命名的文件将合并在一起。
+3. 相同\_group的js或css，引入必须相邻，中间不能插入不同\_group命名的引入。
+
+## 注意事项
+1. 项目中的js变量不能全局声明，需要使用window.变量的方式进行设置。
+2. js文件中'use strict'; 不能全部放到全局。可以在每个js文件的最外层函数开始处加入'use strict’;

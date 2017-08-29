@@ -9,6 +9,7 @@ var config = {
     path: null,
     output: './release',
     staticPath: './release/head-static.html',
+    staticPathList: [],
     groupName: '_group',
     time: null,
     compress: false,
@@ -57,7 +58,8 @@ function setupConfig(callback) {
     if (args.length === 0) {
         return console.error('请输入正确的源码路径');
     } else {
-        config.path = args[0];
+        var pathArg = args[0];
+        config.path = pathArg[pathArg.length - 1] === '/' ? pathArg.substring(0, pathArg.length - 1) : pathArg;
         if (args.length > 1) {
             try {
                 fs.readdirSync(args[1]);
@@ -100,6 +102,12 @@ function setupConfig(callback) {
         return console.error('源码路径错误');
     }
 
+    var incDirs = fs.readdirSync(config.path + '/inc');
+    incDirs.forEach(function(name) {
+        if (name !== 'favicon.html' && name !== 'setting.html') {
+            config.staticPathList.push(config.output + '/inc/' + name);
+        }
+    });
 
 
     clearOldFiles(callback);
@@ -250,19 +258,21 @@ function clearSourceFile(jsMerges, cssMerges) {
 }
 
 function replaceHeadStatic() {
-    console.info('正在更新' + config.staticPath);
-    var name = config.staticPath;
-    var rename = config.staticPath.replace('.html', '-dev.html');
-    fs.unlink(name, function(err) {
-        if (err) {
-            throw err;
-        }
-    });
-    fs.rename(rename, name, function(err) {
-        if (err) {
-            throw err;
-        }
-        console.info('更新' + config.staticPath + "成功");
+    config.staticPathList.forEach(function(staticPath) {
+        console.info('正在更新' + staticPath);
+        var name = staticPath;
+        var rename = staticPath.replace('.html', '-dev.html');
+        fs.unlink(name, function(err) {
+            if (err) {
+                throw err;
+            }
+        });
+        fs.rename(rename, name, function(err) {
+            if (err) {
+                throw err;
+            }
+            console.info('更新' + staticPath + "成功");
+        });
     });
 }
 
@@ -270,36 +280,37 @@ function setupReleaseList() {
     console.info('正在生成文件gulpfile.js .........');
     var jsMergeList = [];
     var cssMergeList = [];
-    var fReadName = config.staticPath;
-    var fWriteName = config.staticPath.replace('.html', '-dev.html');
-    var fRead = fs.createReadStream(fReadName);
-    var fWrite = fs.createWriteStream(fWriteName);
-    var objReadline = readline.createInterface({
-        input: fRead,
-        output: fWrite
+    config.staticPathList.forEach(function(staticPath, index) {
+        var fReadName = staticPath;
+        var fWriteName = staticPath.replace('.html', '-dev.html');
+        var fRead = fs.createReadStream(fReadName);
+        var fWrite = fs.createWriteStream(fWriteName);
+        var objReadline = readline.createInterface({
+            input: fRead,
+            output: fWrite
+        });
+        objReadline.on('line', function(line) {
+            var hasGroup = line.indexOf(config.groupName) !== -1;
+            var isAnn = line.indexOf('<!--') !== -1 && line.indexOf('-->') !== -1;
+            hasGroup && writeFile(line, fWrite);
+            if (!hasGroup && !isAnn) {
+                var formatLine = line;
+                var isJs = line.indexOf('</script>') !== -1 && line.indexOf('src') !== -1;
+                var isCss = line.indexOf('<link') !== -1 && line.indexOf('href') !== -1;
+                if (isJs || isCss) {
+                    var key = isJs ? 'src' : 'href';
+                    var path = getValueForKey(line, key);
+                    setupGroup(isJs ? jsMergeList : cssMergeList, 'normal' + getStaticName(line, key), path);
+                    formatLine = translateDefinition(line, key);
+                }
+                fWrite.write(formatLine + '\n');
+            }
+        });
+        objReadline.on('close', function() {
+            index === config.staticPathList.length - 1 && writeGulpfile(jsMergeList, cssMergeList);
+        });
     });
-    objReadline.on('line', function(line) {
-        var hasGroup = line.indexOf(config.groupName) !== -1;
-        var isAnn = line.indexOf('<!--') !== -1 && line.indexOf('-->') !== -1;
-        hasGroup && writeFile(line);
-        if (!hasGroup && !isAnn) {
-            var formatLine = line;
-            var isJs = line.indexOf('</script>') !== -1;
-            var isCss = line.indexOf('<link') !== -1;
-            if (isJs || isCss) {
-                var key = isJs ? 'src' : 'href';
-                var path = getValueForKey(line, key);
-                setupGroup(isJs ? jsMergeList : cssMergeList, 'normal' + getStaticName(line, key), path);
-                formatLine = translateDefinition(line, key);
-            }            
-            fWrite.write(formatLine + '\n');
-        }
-    });
-    objReadline.on('close', function() {
-        writeGulpfile(jsMergeList, cssMergeList);
-    });
-
-    var writeFile = function(line) {
+    var writeFile = function(line, fWrite) {
         var scriptTpl = '<script src="{{path}}/{{name}}.js?{{time}}"></script>\n';
         var cssTpl = '<link rel="stylesheet" href="{{path}}/{{name}}.css?{{time}}">\n';
         var isScript = line.indexOf('</script>') !== -1;
@@ -398,7 +409,9 @@ function setupGroup(list, group, value) {
         var key = obj.key;
         if (group === key) {
             hasGroup = true;
-            obj.value.push(value);
+            if (obj.value.indexOf(value) === -1) {
+                obj.value.push(value);
+            }
         }
     }
     if (!hasGroup) {
@@ -433,7 +446,6 @@ function translateDefinition(line, key) {
 }
 
 function copyDir(src, dist, callback) {
-    console.log(dist);
     fs.access(dist, function(err){
         if(err) {
             fs.mkdirSync(dist);
